@@ -1,0 +1,22 @@
+{
+  "runtime": "Net90",
+  "defaultVariables": null,
+  "documentGenerator": {
+    "aspNetCoreToOpenApi": {
+      "project": "Interpolator.Host.csproj",
+      "documentName": "v1",
+      "msBuildProjectExtensionsPath": null,
+      "configuration": null,
+      "runtime": null,
+      "targetFramework": null,
+      "noBuild": true,
+      "msBuildOutputPath": null,
+      "verbose": true,
+      "workingDirectory": null,
+      "aspNetCoreEnvironment": "NSWAG",
+      "output": null,
+      "newLineBehavior": "Auto"
+    }
+  },
+  "codeGenerators": {}
+}

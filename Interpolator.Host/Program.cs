@@ -14,8 +14,11 @@ public static class Program
       WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
       builder.SetupSerilog();
+      builder.SetupNswag();
 
       WebApplication app = builder.Build();
+
+      app.UseNswag();
 
       app.MapAboutInfo();
       app.MapGet("/", () => "Hello World!");

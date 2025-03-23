@@ -23,4 +23,18 @@ public static class WebApplicationExtensions
       }
     );
   }
+
+  public static void UseNswag(this WebApplication aWebApplication)
+  {
+    aWebApplication.UseOpenApi(aSettings =>
+      aSettings.PostProcess = (aDocument, _) =>
+      {
+        AboutInfo aboutInfo = AssemblyHelper.GetAboutInfoFromAssembly();
+
+        aDocument.Info.Title = aboutInfo.Name;
+        aDocument.Info.Version = aboutInfo.SemVer;
+      }
+    );
+    aWebApplication.UseSwaggerUi();
+  }
 }

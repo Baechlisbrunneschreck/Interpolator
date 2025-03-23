@@ -4,6 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
+    <NswagFileExists Condition="Exists('$(MSBuildProjectDirectory)\.nswag')">true</NswagFileExists>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,8 +12,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="NSwag.AspNetCore" Version="14.2.0" />
+    <PackageReference Include="NSwag.MSBuild" Version="14.2.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
   </ItemGroup>
+
+  <Target Name="NSwag" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Debug' And '$(NswagFileExists)' == 'true'">
+    <Message Text="*** Running NSwag builder..." Importance="high" />
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="$(NSwagExe_Net90) run .nswag /variables:Configuration=$(Configuration),msBuildOutputPath=$(OutputPath)" />
+  </Target>
 
   <Import Project="..\Build.GitVersion.props" />
 

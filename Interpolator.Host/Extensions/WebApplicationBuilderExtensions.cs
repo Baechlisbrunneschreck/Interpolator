@@ -1,6 +1,7 @@
 using System;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Serilog;
@@ -25,5 +26,11 @@ public static class WebApplicationBuilderExtensions
         aCustomLoggerConfigurationHandler?.Invoke(aHostBuilderContext, aLoggerConfiguration);
       }
     );
+  }
+
+  public static void SetupNswag(this WebApplicationBuilder aWebApplicationBuilder)
+  {
+    aWebApplicationBuilder.Services.AddEndpointsApiExplorer();
+    aWebApplicationBuilder.Services.AddOpenApiDocument();
   }
 }
