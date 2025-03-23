@@ -10,6 +10,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		LICENSE = LICENSE
 		README.md = README.md
+		run-host-watch.sh = run-host-watch.sh
+		Build.GitVersion.props = Build.GitVersion.props
+		Build.Libs.props = Build.Libs.props
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpolator.Host", "Interpolator.Host\Interpolator.Host.csproj", "{5401E7E2-183F-40A9-A4F6-0C82E60610DF}"

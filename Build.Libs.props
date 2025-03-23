@@ -1,0 +1,37 @@
+<Project>
+
+  <PropertyGroup>
+    <Company>INGTES AG</Company>
+    <ContinuousIntegrationBuild>True</ContinuousIntegrationBuild>
+    <Copyright>Copyright © INGTES AG $([System.DateTime]::Now.ToString(yyyy))</Copyright>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>True</IncludeSymbols>
+    <PackageIcon>success.png</PackageIcon>
+    <PackageReadmeFile Condition="Exists('README.md')">README.md</PackageReadmeFile>
+    <PackageTags>INGTES INGTES-SUCCESS INGTES-SUCCESS-Module INGTES-SUCCESS-Portal</PackageTags>
+    <Product>INGTES SUCCESS Portal</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\success.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Condition="Exists('README.md')" Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Condition="Exists('MSBuild\$(MSBuildProjectName).props')" Include="MSBuild\$(MSBuildProjectName).props" Pack="true" PackagePath="build\$(MSBuildProjectName).props">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Condition="Exists('MSBuild\$(MSBuildProjectName).targets')" Include="MSBuild\$(MSBuildProjectName).targets" Pack="true" PackagePath="build\$(MSBuildProjectName).targets">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Import Project="Build.GitVersion.props" />
+
+</Project>

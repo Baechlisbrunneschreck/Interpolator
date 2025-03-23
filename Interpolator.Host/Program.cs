@@ -1,14 +1,26 @@
+using Interpolator.Host.Extensions;
+using Interpolator.Host.Helpers;
+
+using Microsoft.AspNetCore.Builder;
+
 namespace Interpolator.Host;
 
-public class Program
+public static class Program
 {
-    public static void Main(string[] args)
+  public static void Main(string[] args)
+  {
+    LoggerHelper.RunWithSerilog(rootLogger =>
     {
-        var builder = WebApplication.CreateBuilder(args);
-        var app = builder.Build();
+      WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-        app.MapGet("/", () => "Hello World!");
+      builder.SetupSerilog();
 
-        app.Run();
-    }
+      WebApplication app = builder.Build();
+
+      app.MapAboutInfo();
+      app.MapGet("/", () => "Hello World!");
+
+      app.Run();
+    });
+  }
 }
