@@ -1,8 +1,10 @@
 #!/bin/bash
 
+projectName="Interpolator.Host"
+
 dotnet watch \
   --no-hot-reload \
-  --project ./Interpolator.Host/Interpolator.Host.csproj \
+  --project ./$projectName/$projectName.csproj \
   -- \
   run \
   --configuration "Debug"

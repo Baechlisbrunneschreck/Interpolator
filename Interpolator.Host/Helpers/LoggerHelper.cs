@@ -16,7 +16,7 @@ public static class LoggerHelper
       .WriteTo.File(aBootstrapLogFilePath ?? "Logs/bootstrap-.txt", rollingInterval: RollingInterval.Day)
       .CreateBootstrapLogger();
 
-    Log.Information("*** Starting up SUCCESS Host...");
+    Log.Information("*** Starting up ASP.NET Host...");
 
     try
     {
