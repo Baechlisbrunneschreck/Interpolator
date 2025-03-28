@@ -12,6 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Akka.Hosting" Version="1.5.40" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="Marten" Version="7.39.5" />
     <PackageReference Include="NSwag.AspNetCore" Version="14.2.0" />
     <PackageReference Include="NSwag.MSBuild" Version="14.2.0">

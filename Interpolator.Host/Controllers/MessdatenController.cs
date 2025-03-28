@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Interpolator.Host.Extensions;
+using Interpolator.Host.Models;
 
 using Marten;
 
@@ -49,14 +50,14 @@ public class MessdatenController : ControllerBase
 
   [HttpGet]
   [Route("uebersicht")]
-  public async Task<ActionResult<IReadOnlyList<MessdatenPaketUebersicht>>> GetMessdatenUebersicht(
+  public async Task<ActionResult<IReadOnlyList<MessdatenPaketUebersichtResponse>>> GetMessdatenUebersicht(
     CancellationToken cancellationToken
   )
   {
     await using var session = _documentStore.QuerySession();
     var responsePayload = await session
       .Query<MessdatenPaket>()
-      .Select(messdatenPaket => new MessdatenPaketUebersicht(
+      .Select(messdatenPaket => new MessdatenPaketUebersichtResponse(
         messdatenPaket.Id,
         messdatenPaket.Messnummer,
         messdatenPaket.Messart,
@@ -69,7 +70,7 @@ public class MessdatenController : ControllerBase
   }
 }
 
-public record MessdatenPaketUebersicht(
+public record MessdatenPaketUebersichtResponse(
   Guid Id,
   string? Messnummer,
   Messart Messart,
@@ -84,28 +85,3 @@ public record CreateMessdatenRequest(
   DateOnly Abschlussdatum,
   IFormFile Messdaten
 );
-
-public class MessdatenPaket
-{
-  public string? Bemerkungen { get; set; }
-
-  public Guid Id { get; set; }
-
-  public Messart Messart { get; set; }
-
-  public byte[]? Messdaten { get; set; }
-
-  public string MessdatenMimeType { get; set; } = "application/octet-stream";
-
-  public string? Messnummer { get; set; }
-
-  public string? Messort { get; set; }
-}
-
-public enum Messart
-{
-  Geschwindikeit = 0,
-  Temperatur = 1,
-  Feuchtigkeit = 2,
-  Druck = 3,
-}

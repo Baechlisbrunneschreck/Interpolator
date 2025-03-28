@@ -35,7 +35,7 @@ public static class AssemblyHelper
   {
     Assembly asm = aAssembly ?? GetFallbackAssembly();
 
-    return FileVersionInfo.GetVersionInfo(asm.Location).ProductVersion;
+    return FileVersionInfo.GetVersionInfo(asm.Location).ProductVersion ?? "??";
   }
 
   private static Assembly GetFallbackAssembly()

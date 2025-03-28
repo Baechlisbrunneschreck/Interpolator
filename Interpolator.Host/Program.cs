@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
 
+using Akka.Hosting;
+
+using Interpolator.Host.Actors;
 using Interpolator.Host.Extensions;
 using Interpolator.Host.Helpers;
 
@@ -25,6 +28,17 @@ public static class Program
       builder.SetupSerilog();
       builder.SetupNswag();
       builder.SetupMarten();
+      builder.Services.AddAkka(
+        "InterpolatorSystem",
+        akkaConfigurationBuilder =>
+          akkaConfigurationBuilder.WithActors(
+            (system, registry, dependencyResolver) =>
+            {
+              var actor = system.ActorOf(dependencyResolver.Props<MessdatenPaketLoaderActor>());
+              registry.TryRegister<MessdatenPaketLoaderActor>(actor);
+            }
+          )
+      );
 
       WebApplication app = builder.Build();
 
@@ -33,7 +47,7 @@ public static class Program
       app.MapAboutInfo();
       app.MapMartenUserExample();
       app.MapControllers();
-      app.MapGet("/", () => Results.Ok("Hello, World!"));
+      app.MapGet("/", () => Results.Redirect("/swagger", permanent: false));
 
       app.Run();
     });
