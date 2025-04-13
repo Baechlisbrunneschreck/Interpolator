@@ -13,5 +13,7 @@ helm_resource(
     flags=[
         '--wait',
         '--version=1.15.2'
-    ]
+    ],
 )
+
+k8s_yaml('./k8s/local-postgres.yaml')
