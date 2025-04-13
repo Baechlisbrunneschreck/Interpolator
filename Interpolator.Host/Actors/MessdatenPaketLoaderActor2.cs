@@ -67,8 +67,6 @@ public class MessdatenPaketLoaderActor2 : UntypedActor, IWithTimers
         LoadAllPhotovoltaikMessungenCommandHandler();
         break;
     }
-
-    ScheduleNewLoadAllCsvMessdatenPaketCommand();
   }
 
   private double GetDouble(string? input)
@@ -78,8 +76,12 @@ public class MessdatenPaketLoaderActor2 : UntypedActor, IWithTimers
 
   private void LoadAllPhotovoltaikMessungenCommandHandler()
   {
-    var querySession = _documentStore.QuerySession();
-    var photovoltaikMessungen = querySession
+    using var lightweightSession = _documentStore.LightweightSession();
+
+    lightweightSession.DeleteWhere<PhotovoltaikMessung>(x => true);
+    lightweightSession.SaveChangesAsync().GetAwaiter().GetResult();
+
+    var photovoltaikMessungen = lightweightSession
       .Query<MessdatenPaket>()
       .Where(messdatenPaket =>
         messdatenPaket.MessdatenMimeType == "text/csv"
@@ -93,7 +95,10 @@ public class MessdatenPaketLoaderActor2 : UntypedActor, IWithTimers
         "*** PhotovoltaikMessung: '{PhotovoltaikMessung}'",
         photovoltaikMessung
       );
+      lightweightSession.Store(photovoltaikMessung);
     }
+
+    lightweightSession.SaveChangesAsync().GetAwaiter().GetResult();
   }
 
   private IEnumerable<PhotovoltaikMessung> MessdatenPaketToPhotovoltaikMessung(
@@ -110,14 +115,15 @@ public class MessdatenPaketLoaderActor2 : UntypedActor, IWithTimers
 
       foreach (var stromleistungMessung in csvReader.GetRecords<StromleistungCsv>())
       {
-        string? leistungInWatt = stromleistungMessung.LeistungInWatt;
+        var leistungInWatt = GetDouble(stromleistungMessung.LeistungInWatt);
         var uhrzeit = TimeOnly.Parse(stromleistungMessung.Uhrzeit);
 
         result.Add(
           new PhotovoltaikMessung
           {
+            Id = Guid.NewGuid(),
             Zeitstempel = abschlussdatum.ToDateTime(uhrzeit),
-            LeistungInWatt = GetDouble(stromleistungMessung.LeistungInWatt),
+            LeistungInWatt = leistungInWatt,
           }
         );
       }

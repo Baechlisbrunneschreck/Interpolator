@@ -4,6 +4,8 @@ namespace Interpolator.Host.Models.Aggregates;
 
 public record PhotovoltaikMessung
 {
+  public Guid Id { get; set; }
+
   public double LeistungInWatt { get; set; }
 
   public double LuftdruckInHektoPascal { get; set; }

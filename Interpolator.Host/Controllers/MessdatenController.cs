@@ -1,12 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Akka.Actor;
+using Akka.Hosting;
+
+using CsvHelper;
+using CsvHelper.Configuration;
+
+using Interpolator.Host.Actors;
 using Interpolator.Host.Controllers.Messages;
 using Interpolator.Host.Extensions;
 using Interpolator.Host.Models;
+using Interpolator.Host.Models.Aggregates;
 
 using Marten;
 
@@ -18,14 +28,19 @@ namespace Interpolator.Host.Controllers;
 public class MessdatenController : ControllerBase
 {
   private readonly IDocumentStore _documentStore;
+  private readonly IRequiredActor<MessdatenPaketLoaderActor2> _messdatenActorRef;
 
-  public MessdatenController(IDocumentStore documentStore)
+  public MessdatenController(
+    IDocumentStore documentStore,
+    IRequiredActor<MessdatenPaketLoaderActor2> messdatenActorRef
+  )
   {
     _documentStore = documentStore;
+    _messdatenActorRef = messdatenActorRef;
   }
 
   [HttpPost]
-  [Route("create")]
+  [Route("neue-messdaten")]
   public async Task<ActionResult<Guid>> CreateMessdatenPost(
     [FromForm] CreateMessdatenRequest createMessdatenRequest
   )
@@ -47,6 +62,8 @@ public class MessdatenController : ControllerBase
     session.Store(neuesMessdatenPaket);
 
     await session.SaveChangesAsync();
+
+    _messdatenActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
 
     return Ok(neuesMessdatenPaket.Id);
   }
@@ -70,5 +87,42 @@ public class MessdatenController : ControllerBase
       .ToListAsync(cancellationToken);
 
     return Ok(responsePayload);
+  }
+
+  [HttpGet]
+  [Route("neuberechnen")]
+  public async Task<IActionResult> Neuberechnen()
+  {
+    _messdatenActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+
+    return Ok();
+  }
+
+  [HttpGet]
+  [Route("photovoltaik-messungen-download")]
+  public async Task<IActionResult> PhotovoltaikMessungenDownload()
+  {
+    await using var session = _documentStore.QuerySession();
+    var photovoltaikMessungen = await session.Query<PhotovoltaikMessung>().ToListAsync();
+    var tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+    using (var writer = new StreamWriter(tempFilePath))
+    {
+      using var csv = new CsvWriter(
+        writer,
+        new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+          Delimiter = ";",
+          HasHeaderRecord = true,
+          IgnoreBlankLines = true,
+          TrimOptions = TrimOptions.Trim,
+        }
+      );
+      await csv.WriteRecordsAsync(photovoltaikMessungen);
+      await writer.FlushAsync();
+    }
+
+    var reader = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
+
+    return File(reader, "text/csv", "photovoltaik-messungen.csv");
   }
 }
