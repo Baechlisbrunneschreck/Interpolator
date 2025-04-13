@@ -11,9 +11,9 @@ helm_resource(
     ],
     namespace='stackgres',
     flags=[
-        '--wait',
+        # '--wait',
         '--version=1.15.2'
     ],
 )
 
-k8s_yaml('./k8s/local-postgres.yaml')
+k8s_yaml('./k8s/local-postgres.yaml', )

@@ -4,6 +4,8 @@ namespace Interpolator.Host.Models;
 
 public class MessdatenPaket
 {
+  public DateTime Abschlusszeitpunkt { get; set; }
+
   public string? Bemerkungen { get; set; }
 
   public Guid Id { get; set; }

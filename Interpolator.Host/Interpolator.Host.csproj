@@ -14,9 +14,9 @@
   <ItemGroup>
     <PackageReference Include="Akka.Hosting" Version="1.5.40" />
     <PackageReference Include="CsvHelper" Version="33.0.1" />
-    <PackageReference Include="Marten" Version="7.39.5" />
-    <PackageReference Include="NSwag.AspNetCore" Version="14.2.0" />
-    <PackageReference Include="NSwag.MSBuild" Version="14.2.0">
+    <PackageReference Include="Marten.NodaTime" Version="8.0.0-alpha-3" />
+    <PackageReference Include="NSwag.AspNetCore" Version="14.3.0" />
+    <PackageReference Include="NSwag.MSBuild" Version="14.3.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -29,5 +29,9 @@
   </Target>
 
   <Import Project="..\Build.GitVersion.props" />
+
+  <ItemGroup>
+    <PackageReference Update="GitVersion.MsBuild" Version="6.2.0" />
+  </ItemGroup>
 
 </Project>

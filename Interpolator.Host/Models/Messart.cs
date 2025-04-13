@@ -2,8 +2,7 @@ namespace Interpolator.Host.Models;
 
 public enum Messart
 {
-  Geschwindikeit = 0,
-  Temperatur = 1,
-  Feuchtigkeit = 2,
-  Druck = 3,
+  Anemometer = 0,
+  Stromleistung = 1,
+  PceZeitFeuchtigkeitTemperator = 2
 }

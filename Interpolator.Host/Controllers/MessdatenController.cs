@@ -4,12 +4,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Interpolator.Host.Controllers.Messages;
 using Interpolator.Host.Extensions;
 using Interpolator.Host.Models;
 
 using Marten;
 
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Interpolator.Host.Controllers;
@@ -40,7 +40,10 @@ public class MessdatenController : ControllerBase
       MessdatenMimeType = createMessdatenRequest.Messdaten.ContentType,
       Messnummer = createMessdatenRequest.Messnummer,
       Messort = createMessdatenRequest.Messort,
+      Abschlusszeitpunkt = createMessdatenRequest.Abschlusszeitpunkt ?? DateTime.UtcNow,
+      Bemerkungen = createMessdatenRequest.Bemerkungen,
     };
+
     session.Store(neuesMessdatenPaket);
 
     await session.SaveChangesAsync();
@@ -50,9 +53,9 @@ public class MessdatenController : ControllerBase
 
   [HttpGet]
   [Route("uebersicht")]
-  public async Task<ActionResult<IReadOnlyList<MessdatenPaketUebersichtResponse>>> GetMessdatenUebersicht(
-    CancellationToken cancellationToken
-  )
+  public async Task<
+    ActionResult<IReadOnlyList<MessdatenPaketUebersichtResponse>>
+  > GetMessdatenUebersicht(CancellationToken cancellationToken)
   {
     await using var session = _documentStore.QuerySession();
     var responsePayload = await session
@@ -69,19 +72,3 @@ public class MessdatenController : ControllerBase
     return Ok(responsePayload);
   }
 }
-
-public record MessdatenPaketUebersichtResponse(
-  Guid Id,
-  string? Messnummer,
-  Messart Messart,
-  string MessdatenMimeType,
-  string? Messort
-);
-
-public record CreateMessdatenRequest(
-  string Messnummer,
-  string Messort,
-  Messart Messart,
-  DateOnly Abschlussdatum,
-  IFormFile Messdaten
-);

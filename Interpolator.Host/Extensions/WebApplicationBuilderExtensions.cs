@@ -1,6 +1,9 @@
 using System;
 
+using JasperFx;
+
 using Marten;
+using Marten.NodaTimePlugin;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -8,8 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Serilog;
-
-using Weasel.Core;
 
 namespace Interpolator.Host.Extensions;
 
@@ -36,6 +37,8 @@ public static class WebApplicationBuilderExtensions
       {
         options.AutoCreateSchemaObjects = AutoCreate.All;
       }
+
+      options.UseNodaTime();
     });
   }
 
