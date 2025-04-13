@@ -20,6 +20,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpolator.Host", "Interp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interpolator.Domain", "Interpolator.Domain\Interpolator.Domain.csproj", "{FCEA0D64-E21E-4555-B01A-3424D572A96F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "k8s", "k8s", "{86E12122-C118-E4A9-17BA-DED34820E565}"
+	ProjectSection(SolutionItems) = preProject
+		k8s\local-namespace.yaml = k8s\local-namespace.yaml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,5 +62,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{86E12122-C118-E4A9-17BA-DED34820E565} = {2B0483FD-940B-4BD0-B1EC-A18B9D04DE66}
 	EndGlobalSection
 EndGlobal
