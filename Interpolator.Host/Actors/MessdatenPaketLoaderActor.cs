@@ -23,7 +23,6 @@ public class MessdatenPaketLoaderActor : UntypedActor, IWithTimers
 {
   private readonly IDocumentStore _documentStore;
   private readonly ILogger<MessdatenPaketLoaderActor> _logger;
-  private IQuerySession? _querySession;
 
   public MessdatenPaketLoaderActor(
     ILogger<MessdatenPaketLoaderActor> logger,
@@ -34,7 +33,7 @@ public class MessdatenPaketLoaderActor : UntypedActor, IWithTimers
     _documentStore = documentStore;
   }
 
-  public ITimerScheduler Timers { get; set; }
+  public ITimerScheduler? Timers { get; set; }
 
   public override void AroundPostStop()
   {
@@ -60,7 +59,8 @@ public class MessdatenPaketLoaderActor : UntypedActor, IWithTimers
   private void LoadAllCsvMessdatenPaketeCommandHandler()
   {
     _logger.LogInformation("*** Loading all CSV MessdatenPakete...");
-    _querySession = _documentStore.QuerySession();
+
+    var querySession = _documentStore.QuerySession();
 
     var csvReaderConfiguration = new CsvConfiguration(CultureInfo.InvariantCulture)
     {
@@ -73,7 +73,7 @@ public class MessdatenPaketLoaderActor : UntypedActor, IWithTimers
     NumberFormatInfo doubleFormatProvider = new() { NumberDecimalSeparator = "," };
 
     foreach (
-      var messdatenPaket in _querySession
+      var messdatenPaket in querySession
         .Query<MessdatenPaket>()
         .Where(p => p.MessdatenMimeType == "text/csv")
         .ToList()
@@ -131,7 +131,7 @@ public class MessdatenPaketLoaderActor : UntypedActor, IWithTimers
 
   private void ScheduleNewLoadAllCsvMessdatenPaketCommand()
   {
-    Timers.StartSingleTimer(
+    Timers?.StartSingleTimer(
       nameof(LoadAllCsvMessdatenPaketeCommand),
       new LoadAllCsvMessdatenPaketeCommand(),
       TimeSpan.FromSeconds(15)
