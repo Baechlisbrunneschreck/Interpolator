@@ -11,8 +11,8 @@ helm_resource(
     ],
     namespace='stackgres',
     flags=[
-        # '--wait',
-        '--version=1.15.2'
+        '--wait',
+        '--version=1.16.3'
     ],
 )
 
