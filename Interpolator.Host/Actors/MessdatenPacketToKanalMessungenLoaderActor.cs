@@ -79,12 +79,13 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
     lightweightSession.SaveChangesAsync().GetAwaiter().GetResult();
 
     _logger.LogInformation("*** Suche alle {MessdatenPaket}...", nameof(MessdatenPaket));
-    IQueryable<KanalMessung> kanalMessungen = lightweightSession
+    var kanalMessungen = lightweightSession
       .Query<MessdatenPaket>()
       .Where(messdatenPaket =>
         messdatenPaket.MessdatenMimeType == "text/csv"
         && messdatenPaket.Messart == Messart.Anemometer
       )
+      .AsEnumerable()
       .SelectMany(messdatenPaket =>
         MessdatenPaketToKanalMessung(messdatenPaket, interpolationsOffset)
       );
@@ -114,7 +115,10 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
 
     if (messdatenPaket.Messdaten != null)
     {
-      _logger.LogInformation("*** {MessdatenPaket} mit Messdaten gefunden...", nameof(MessdatenPaket));
+      _logger.LogInformation(
+        "*** {MessdatenPaket} mit Messdaten gefunden...",
+        nameof(MessdatenPaket)
+      );
       using var streamReader = new StreamReader(new MemoryStream(messdatenPaket.Messdaten));
       using var csvReader = new CsvReader(streamReader, _csvReaderConfiguration);
 
@@ -143,7 +147,11 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
           continue;
         }
 
-        _logger.LogInformation("*** Verarbeite {AnemometerCsv} {Index}...", nameof(AnemometerCsv), anemomenterMessungIndex);
+        _logger.LogInformation(
+          "*** Verarbeite {AnemometerCsv} {Index}...",
+          nameof(AnemometerCsv),
+          anemomenterMessungIndex
+        );
 
         TimeOnly uhrzeit = TimeOnly.Parse(anemometerMessung.Zeit, CultureInfo.InvariantCulture);
         DateTime zeitstempel = abschlussdatum.ToDateTime(uhrzeit);
@@ -216,22 +224,25 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         if (nextIndex < nbrMessungen)
         {
           double xCoordNext = temperaturMesspunkte[nextIndex].X;
-          double currentOffset = 0;
+          double xCoordCurrent = temperaturMesspunkte[i].X;
 
-          while (currentOffset < xCoordNext)
+          while (xCoordCurrent < xCoordNext)
           {
-            _logger.LogInformation("*** Interpolationspunkt für Offset {Offset} wird berechnet...", currentOffset);
+            _logger.LogInformation(
+              "*** Interpolationspunkt für Offset {Offset} wird berechnet...",
+              xCoordCurrent
+            );
             temperaturInterpolationspunkte.Add(
-              new Interpolationspunkt(temperaturMesspunkt, currentOffset)
+              new Interpolationspunkt(temperaturMesspunkt, xCoordCurrent)
             );
             luftfeuchtigkeitInterpolationspunkte.Add(
-              new Interpolationspunkt(luftfeuchtigkeitMesspunkt, currentOffset)
+              new Interpolationspunkt(luftfeuchtigkeitMesspunkt, xCoordCurrent)
             );
             windgeschwindigkeitInterpolationspunkte.Add(
-              new Interpolationspunkt(windgeschwindigkeitMesspunkt, currentOffset)
+              new Interpolationspunkt(windgeschwindigkeitMesspunkt, xCoordCurrent)
             );
 
-            currentOffset += interpolationsOffset;
+            xCoordCurrent += interpolationsOffset;
           }
         }
         else
@@ -244,7 +255,10 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
             new Interpolationspunkt(windgeschwindigkeitMesspunkt, 0)
           );
         }
-        _logger.LogInformation("*** Berechnung Interpolationspunkte für Messung {Index} abgeschlossen!", i);
+        _logger.LogInformation(
+          "*** Berechnung Interpolationspunkte für Messung {Index} abgeschlossen!",
+          i
+        );
       }
 
       for (int i = 0; i < temperaturInterpolationspunkte.Count; i++)
@@ -264,7 +278,10 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
       }
     }
 
-    _logger.LogInformation("*** Berechnung von {Anzahl} Kanalmessungen abgeschlossen 💪💪💪!", result.Count);
+    _logger.LogInformation(
+      "*** Berechnung von {Anzahl} Kanalmessungen abgeschlossen 💪💪💪!",
+      result.Count
+    );
 
     return result;
   }

@@ -105,10 +105,18 @@ public class MessdatenController : ControllerBase
   }
 
   [HttpGet]
-  [Route("alles-neuberechnen")]
-  public IActionResult Neuberechnen()
+  [Route("photovoltaik-messungen-neuberechnen")]
+  public IActionResult PhotovoltaikMessungenNeuberechnen()
   {
     _messdatenToPhotovoltaikActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+
+    return Ok();
+  }
+
+  [HttpGet]
+  [Route("kanal-messungen-neuberechnen")]
+  public IActionResult KanalMessungenNeuberechnen()
+  {
     _messdatenToKanalMessungenActorRef.ActorRef.Tell(new LoadAdllKanalMessungenCommand());
 
     return Ok();
