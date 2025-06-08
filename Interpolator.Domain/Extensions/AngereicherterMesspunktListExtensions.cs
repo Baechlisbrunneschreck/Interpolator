@@ -4,15 +4,21 @@ namespace Interpolator.Domain.Extensions;
 
 public static class MessungListExtensions
 {
+  public static void CalculateSpline(this List<AngereicherterMesspunkt> messListe, double gewichtung)
   // Glättende kubische Spline-Funktion {Helmut Späth: Algorithmen für elementare Ausgleichs-Modelle,
   // Oldenbourg Verlag München Wien 1973, ISBN 3-486-39561-0} Seite 62 Bild U11
   //
   // yk (x)  = Ak * (x - xk)^3 + Bk * (x - xk)^2 + Ck * (x - xk) + Dk
   // x1 < x2 < ...... < xn
   // k  = Index [1]
-  public static List<AngereicherterMesspunkt> CalculateSpline(this List<AngereicherterMesspunkt> messListe)
+  //
+  // Änderungen
+  //03032014_01      H4 -> N3 und H3 -> N4 wurden gewechsel und gemäss Original korrigiert
+  // Pos 135           if (N4 != 0)
+  // Pos 140             if (N3 != 0)
+
   {
-    int N = messListe.Count - 1;            // Anzahl Messpunkte [1] Startwert = 0
+    int N = (messListe.Count - 1);          // Anzahl Messpunkte [1] Startwert = 0
     int N1 = N - 1;                         // Index-Grenze [1]
     messListe[0].C = 0;                     // Ck = C (k) Parameter
     messListe[0].D = 0;                     // Dk = D (k) Parameter
@@ -36,8 +42,8 @@ public static class MessungListExtensions
     messListe[1].B = 0;
     int J1 = 0;                             // Index [1]
     int J2 = 0;                             // Index [1]
-    double P1 = 1 / messListe[0].P;         // Reziprokes Gewicht [1]  P1 = 1 / P(0)
-    double P2 = 1 / messListe[1].P;         // Reziprokes Gewicht [1]  P2 = 1 / P(1)
+    double P1 = 1 / (messListe[0].P ?? gewichtung);         // Reziprokes Gewicht [1]  P1 = 1 / P(0)
+    double P2 = 1 / (messListe[1].P ?? gewichtung);         // Reziprokes Gewicht [1]  P2 = 1 / P(1)
     double H = 0;
     double H1 = messListe[0].D;
     double H2 = messListe[1].D;
@@ -54,7 +60,7 @@ public static class MessungListExtensions
       }
 
       double H3 = messListe[k2].D;
-      double P3 = 1 / messListe[k2].P;
+      double P3 = 1 / (messListe[k2].P ?? gewichtung);
       double S = H1 + H2;
       double T = 2 / H1 + 2 / H2 + 6 * (H1 * H1 * P1 + S * S * P2 + H2 * H2 * P3);
 
@@ -63,12 +69,12 @@ public static class MessungListExtensions
       double A3 = 6 * P3 * H2 * H3;
       double Z = 1 / (T - A1 * messListe[k].B - H * messListe[k].A);
 
-      if (k <= N3)
+      if (k <= N3)                                //03032014_01 N4 > N3
       {
         messListe[k1].A = Z * (B2 - H * messListe[k1].B);
       }
 
-      if (k <= N4)
+      if (k <= N4)                                //03032014_01 N3 > N4
       {
         messListe[k2].B = Z * A3;
       }
@@ -123,13 +129,13 @@ public static class MessungListExtensions
       messListe[k].C = messListe[k].D;
       H2 = messListe[k].D * (messListe[J2].Y2 - messListe[k].Y2);
       messListe[k].A = H2 / 6;
-      messListe[k].D = messListe[k].Y - (H2 - H1) / messListe[k].P;
+      messListe[k].D = messListe[k].Y - (H2 - H1) / (messListe[k].P ?? gewichtung);
 
       messListe[k].B = 0.5 * messListe[k].Y2;
       H1 = H2;
     }
 
-    messListe[N].D = messListe[N].Y + H1 / messListe[N].P;
+    messListe[N].D = messListe[N].Y + H1 / (messListe[N].P ?? gewichtung);
 
     for (int k = 0; k <= N1; k++)
     {
@@ -138,7 +144,5 @@ public static class MessungListExtensions
       messListe[k].C = (messListe[J2].D - messListe[k].D) * H - (messListe[J2].Y2 + 2 * messListe[k].Y2) / (6 * H);
     }
     messListe[N].C = (messListe[N].D - messListe[N1].D) * H + (2 * messListe[N].Y2 + messListe[N1].Y2) / (6 * H);
-
-    return messListe;
   }
 }

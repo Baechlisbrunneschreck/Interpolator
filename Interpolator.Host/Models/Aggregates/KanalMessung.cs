@@ -1,5 +1,7 @@
 using System;
 
+using CsvHelper.Configuration.Attributes;
+
 namespace Interpolator.Host.Models.Aggregates;
 
 public class KanalMessung
@@ -11,5 +13,7 @@ public class KanalMessung
   public double LuftdruckInHektoPascal { get; set; }
   public double TaupunktInGradCelsius { get; set; }
   public string? Messort { get; set; }
+
+  [Format("yyyy-MM-dd HH:mm:ss:ffffff")]
   public DateTime Zeitstempel { get; set; }
 }

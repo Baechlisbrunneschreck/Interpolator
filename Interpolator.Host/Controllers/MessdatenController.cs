@@ -5,21 +5,16 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Akka.Actor;
 using Akka.Hosting;
-
 using CsvHelper;
 using CsvHelper.Configuration;
-
 using Interpolator.Host.Actors;
 using Interpolator.Host.Controllers.Messages;
 using Interpolator.Host.Extensions;
 using Interpolator.Host.Models;
 using Interpolator.Host.Models.Aggregates;
-
 using Marten;
-
 using Microsoft.AspNetCore.Mvc;
 
 namespace Interpolator.Host.Controllers;
@@ -28,8 +23,8 @@ namespace Interpolator.Host.Controllers;
 public class MessdatenController : ControllerBase
 {
   private readonly IDocumentStore _documentStore;
-  private readonly IRequiredActor<MessdatenPacketToPhotovoltaikMessungenLoaderActor> _messdatenToPhotovoltaikActorRef;
   private readonly IRequiredActor<MessdatenPackeToKanalMessungenLoaderActor> _messdatenToKanalMessungenActorRef;
+  private readonly IRequiredActor<MessdatenPacketToPhotovoltaikMessungenLoaderActor> _messdatenToPhotovoltaikActorRef;
 
   public MessdatenController(
     IDocumentStore documentStore,
@@ -69,7 +64,9 @@ public class MessdatenController : ControllerBase
     switch (createMessdatenRequest.Messart)
     {
       case Messart.Anemometer:
-        _messdatenToKanalMessungenActorRef.ActorRef.Tell(new LoadAdllKanalMessungenCommand());
+        _messdatenToKanalMessungenActorRef.ActorRef.Tell(
+          new LoadAdllKanalMessungenCommand(createMessdatenRequest.Gewichtung)
+        );
         break;
       case Messart.Stromleistung:
         _messdatenToPhotovoltaikActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
@@ -105,52 +102,6 @@ public class MessdatenController : ControllerBase
   }
 
   [HttpGet]
-  [Route("photovoltaik-messungen-neuberechnen")]
-  public IActionResult PhotovoltaikMessungenNeuberechnen()
-  {
-    _messdatenToPhotovoltaikActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
-
-    return Ok();
-  }
-
-  [HttpGet]
-  [Route("kanal-messungen-neuberechnen")]
-  public IActionResult KanalMessungenNeuberechnen()
-  {
-    _messdatenToKanalMessungenActorRef.ActorRef.Tell(new LoadAdllKanalMessungenCommand());
-
-    return Ok();
-  }
-
-  [HttpGet]
-  [Route("photovoltaik-messungen-download")]
-  public async Task<IActionResult> PhotovoltaikMessungenDownload()
-  {
-    await using var session = _documentStore.QuerySession();
-    var photovoltaikMessungen = await session.Query<PhotovoltaikMessung>().ToListAsync();
-    var tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
-    using (var writer = new StreamWriter(tempFilePath))
-    {
-      using var csv = new CsvWriter(
-        writer,
-        new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-          Delimiter = ";",
-          HasHeaderRecord = true,
-          IgnoreBlankLines = true,
-          TrimOptions = TrimOptions.Trim,
-        }
-      );
-      await csv.WriteRecordsAsync(photovoltaikMessungen);
-      await writer.FlushAsync();
-    }
-
-    var reader = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
-
-    return File(reader, "text/csv", "photovoltaik-messungen.csv");
-  }
-
-  [HttpGet]
   [Route("kanal-messungen-download")]
   public async Task<IActionResult> KanalMessungenDownload()
   {
@@ -176,5 +127,59 @@ public class MessdatenController : ControllerBase
     var reader = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
 
     return File(reader, "text/csv", "kanal-messungen.csv");
+  }
+
+  [HttpGet]
+  [Route("kanal-messungen-neuberechnen")]
+  public IActionResult KanalMessungenNeuberechnen(string gewichtung)
+  {
+    var parsedGewichtung = double.TryParse(
+      gewichtung,
+      NumberStyles.Float,
+      CultureInfo.InvariantCulture,
+      out var gewichtungValue
+    )
+      ? gewichtungValue
+      : throw new ArgumentException("Ungültige Gewichtung", nameof(gewichtung));
+    _messdatenToKanalMessungenActorRef.ActorRef.Tell(new LoadAdllKanalMessungenCommand(parsedGewichtung));
+
+    return Ok();
+  }
+
+  [HttpGet]
+  [Route("photovoltaik-messungen-download")]
+  public async Task<IActionResult> PhotovoltaikMessungenDownload()
+  {
+    await using var session = _documentStore.QuerySession();
+    var photovoltaikMessungen = await session.Query<PhotovoltaikMessung>().ToListAsync();
+    var tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+    await using (var writer = new StreamWriter(tempFilePath))
+    {
+      await using var csv = new CsvWriter(
+        writer,
+        new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+          Delimiter = ";",
+          HasHeaderRecord = true,
+          IgnoreBlankLines = true,
+          TrimOptions = TrimOptions.Trim,
+        }
+      );
+      await csv.WriteRecordsAsync(photovoltaikMessungen);
+      await writer.FlushAsync();
+    }
+
+    var reader = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
+
+    return File(reader, "text/csv", "photovoltaik-messungen.csv");
+  }
+
+  [HttpGet]
+  [Route("photovoltaik-messungen-neuberechnen")]
+  public IActionResult PhotovoltaikMessungenNeuberechnen()
+  {
+    _messdatenToPhotovoltaikActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+
+    return Ok();
   }
 }
