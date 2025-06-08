@@ -28,15 +28,18 @@ namespace Interpolator.Host.Controllers;
 public class MessdatenController : ControllerBase
 {
   private readonly IDocumentStore _documentStore;
-  private readonly IRequiredActor<MessdatenPaketLoaderActor2> _messdatenActorRef;
+  private readonly IRequiredActor<MessdatenPacketToPhotovoltaikMessungenLoaderActor> _messdatenToPhotovoltaikActorRef;
+  private readonly IRequiredActor<MessdatenPackeToKanalMessungenLoaderActor> _messdatenToKanalMessungenActorRef;
 
   public MessdatenController(
     IDocumentStore documentStore,
-    IRequiredActor<MessdatenPaketLoaderActor2> messdatenActorRef
+    IRequiredActor<MessdatenPacketToPhotovoltaikMessungenLoaderActor> messdatenToPhotovoltaikActorRef,
+    IRequiredActor<MessdatenPackeToKanalMessungenLoaderActor> messdatenToKanalMessungenActorRef
   )
   {
     _documentStore = documentStore;
-    _messdatenActorRef = messdatenActorRef;
+    _messdatenToPhotovoltaikActorRef = messdatenToPhotovoltaikActorRef;
+    _messdatenToKanalMessungenActorRef = messdatenToKanalMessungenActorRef;
   }
 
   [HttpPost]
@@ -63,7 +66,19 @@ public class MessdatenController : ControllerBase
 
     await session.SaveChangesAsync();
 
-    _messdatenActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+    switch (createMessdatenRequest.Messart)
+    {
+      case Messart.Anemometer:
+        _messdatenToKanalMessungenActorRef.ActorRef.Tell(new LoadAdllKanalMessungenCommand());
+        break;
+      case Messart.Stromleistung:
+        _messdatenToPhotovoltaikActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+        break;
+      case Messart.PceZeitFeuchtigkeitTemperator:
+        break;
+      default:
+        break;
+    }
 
     return Ok(neuesMessdatenPaket.Id);
   }
@@ -90,10 +105,11 @@ public class MessdatenController : ControllerBase
   }
 
   [HttpGet]
-  [Route("neuberechnen")]
-  public async Task<IActionResult> Neuberechnen()
+  [Route("alles-neuberechnen")]
+  public IActionResult Neuberechnen()
   {
-    _messdatenActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+    _messdatenToPhotovoltaikActorRef.ActorRef.Tell(new LoadAllPhotovoltaikMessungenCommand());
+    _messdatenToKanalMessungenActorRef.ActorRef.Tell(new LoadAdllKanalMessungenCommand());
 
     return Ok();
   }
@@ -124,5 +140,33 @@ public class MessdatenController : ControllerBase
     var reader = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
 
     return File(reader, "text/csv", "photovoltaik-messungen.csv");
+  }
+
+  [HttpGet]
+  [Route("kanal-messungen-download")]
+  public async Task<IActionResult> KanalMessungenDownload()
+  {
+    await using var session = _documentStore.QuerySession();
+    var kanalMessungen = await session.Query<KanalMessung>().ToListAsync();
+    var tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+    using (var writer = new StreamWriter(tempFilePath))
+    {
+      using var csv = new CsvWriter(
+        writer,
+        new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+          Delimiter = ";",
+          HasHeaderRecord = true,
+          IgnoreBlankLines = true,
+          TrimOptions = TrimOptions.Trim,
+        }
+      );
+      await csv.WriteRecordsAsync(kanalMessungen);
+      await writer.FlushAsync();
+    }
+
+    var reader = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
+
+    return File(reader, "text/csv", "kanal-messungen.csv");
   }
 }

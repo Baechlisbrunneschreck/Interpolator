@@ -16,5 +16,5 @@ public class AnemometerCsv
   public string? WindgeschwindigkeitInMeterProSekunde { get; set; }
 
   [Index(0)]
-  public string? Datum { get; set; }
+  public string? Zeit { get; set; }
 }

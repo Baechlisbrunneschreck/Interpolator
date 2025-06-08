@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 
 using Akka.Actor;
 
 using CsvHelper;
-using CsvHelper.Configuration;
 
+using Interpolator.Host.Actors.Bases;
 using Interpolator.Host.Models;
 using Interpolator.Host.Models.Aggregates;
 using Interpolator.Host.Models.Csv;
@@ -21,24 +20,13 @@ namespace Interpolator.Host.Actors;
 
 public record LoadAllPhotovoltaikMessungenCommand;
 
-public class MessdatenPaketLoaderActor2 : UntypedActor, IWithTimers
+public class MessdatenPacketToPhotovoltaikMessungenLoaderActor : CsvLoaderActorBase, IWithTimers
 {
-  private readonly CsvConfiguration _csvReaderConfiguration = new(CultureInfo.InvariantCulture)
-  {
-    Delimiter = ";",
-    HasHeaderRecord = true,
-    IgnoreBlankLines = true,
-    TrimOptions = TrimOptions.Trim,
-  };
-
   private readonly IDocumentStore _documentStore;
+  private readonly ILogger<MessdatenPacketToPhotovoltaikMessungenLoaderActor> _logger;
 
-  private readonly NumberFormatInfo _doubleFormatProvider = new() { NumberDecimalSeparator = "," };
-
-  private readonly ILogger<MessdatenPaketLoaderActor2> _logger;
-
-  public MessdatenPaketLoaderActor2(
-    ILogger<MessdatenPaketLoaderActor2> logger,
+  public MessdatenPacketToPhotovoltaikMessungenLoaderActor(
+    ILogger<MessdatenPacketToPhotovoltaikMessungenLoaderActor> logger,
     IDocumentStore documentStore
   )
   {
@@ -69,10 +57,7 @@ public class MessdatenPaketLoaderActor2 : UntypedActor, IWithTimers
     }
   }
 
-  private double GetDouble(string? input)
-  {
-    return double.Parse(input ?? "0", NumberStyles.Any, _doubleFormatProvider);
-  }
+
 
   private void LoadAllPhotovoltaikMessungenCommandHandler()
   {

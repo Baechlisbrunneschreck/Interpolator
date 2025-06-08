@@ -34,8 +34,19 @@ public static class Program
           akkaConfigurationBuilder.WithActors(
             (system, registry, dependencyResolver) =>
             {
-              var actor = system.ActorOf(dependencyResolver.Props<MessdatenPaketLoaderActor2>());
-              registry.TryRegister<MessdatenPaketLoaderActor2>(actor);
+              var messdatenPakeToPhotovoltaikMessungenLoaderActor = system.ActorOf(
+                dependencyResolver.Props<MessdatenPacketToPhotovoltaikMessungenLoaderActor>()
+              );
+              var messdatenPaketToKanalMessungenLoaderActor = system.ActorOf(
+                dependencyResolver.Props<MessdatenPackeToKanalMessungenLoaderActor>()
+              );
+
+              registry.TryRegister<MessdatenPacketToPhotovoltaikMessungenLoaderActor>(
+                messdatenPakeToPhotovoltaikMessungenLoaderActor
+              );
+              registry.TryRegister<MessdatenPackeToKanalMessungenLoaderActor>(
+                messdatenPaketToKanalMessungenLoaderActor
+              );
             }
           )
       );
