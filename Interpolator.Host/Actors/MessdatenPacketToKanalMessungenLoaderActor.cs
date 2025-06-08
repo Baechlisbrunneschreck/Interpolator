@@ -68,12 +68,18 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
 
   private void LoadAllKanalMessungenCommandHandler(double interpolationsOffset)
   {
+    _logger.LogInformation(
+      "*** Kommando {Command} erhalten",
+      nameof(LoadAdllKanalMessungenCommand)
+    );
     using var lightweightSession = _documentStore.LightweightSession();
 
+    _logger.LogInformation("*** Lösche alle existierende {Messung}...", nameof(KanalMessung));
     lightweightSession.DeleteWhere<KanalMessung>(x => true);
     lightweightSession.SaveChangesAsync().GetAwaiter().GetResult();
 
-    var kanalMessungen = lightweightSession
+    _logger.LogInformation("*** Suche alle {MessdatenPaket}...", nameof(MessdatenPaket));
+    IQueryable<KanalMessung> kanalMessungen = lightweightSession
       .Query<MessdatenPaket>()
       .Where(messdatenPaket =>
         messdatenPaket.MessdatenMimeType == "text/csv"
@@ -90,6 +96,12 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
     }
 
     lightweightSession.SaveChangesAsync().GetAwaiter().GetResult();
+
+    _logger.LogInformation(
+      "*** {Anzahl} {KanalMessung} erstellt & gespeichert!",
+      kanalMessungen.Count(),
+      nameof(KanalMessung)
+    );
   }
 
   private List<KanalMessung> MessdatenPaketToKanalMessung(
@@ -102,6 +114,7 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
 
     if (messdatenPaket.Messdaten != null)
     {
+      _logger.LogInformation("*** {MessdatenPaket} mit Messdaten gefunden...", nameof(MessdatenPaket));
       using var streamReader = new StreamReader(new MemoryStream(messdatenPaket.Messdaten));
       using var csvReader = new CsvReader(streamReader, _csvReaderConfiguration);
 
@@ -129,6 +142,8 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
 
           continue;
         }
+
+        _logger.LogInformation("*** Verarbeite {AnemometerCsv} {Index}...", nameof(AnemometerCsv), anemomenterMessungIndex);
 
         TimeOnly uhrzeit = TimeOnly.Parse(anemometerMessung.Zeit, CultureInfo.InvariantCulture);
         DateTime zeitstempel = abschlussdatum.ToDateTime(uhrzeit);
@@ -161,12 +176,28 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
       }
 
       Task.WhenAll(
-          Task.Run(temperaturMesspunkte.CalculateSpline),
-          Task.Run(luftfeuchtigkeitMesspunkte.CalculateSpline),
-          Task.Run(windgeschwindigkeitMesspunkte.CalculateSpline)
+          Task.Run(() =>
+          {
+            _logger.LogInformation("*** Berechne Spline für Temperatur-Messpunkte...");
+            temperaturMesspunkte.CalculateSpline();
+            _logger.LogInformation("*** Spline für Temperatur-Messpunkte berechnet!");
+          }),
+          Task.Run(() =>
+          {
+            _logger.LogInformation("*** Berechne Spline für Luftfeuchtigkeit-Messpunkte...");
+            luftfeuchtigkeitMesspunkte.CalculateSpline();
+            _logger.LogInformation("*** Spline für Luftfeuchtigkeit-Messpunkte berechnet!");
+          }),
+          Task.Run(() =>
+          {
+            _logger.LogInformation("*** Berechne Spline für Windgeschwindigkeit-Messpunkte...");
+            windgeschwindigkeitMesspunkte.CalculateSpline();
+            _logger.LogInformation("*** Spline für Windgeschwindigkeit-Messpunkte berechnet!");
+          })
         )
         .GetAwaiter()
         .GetResult();
+      _logger.LogInformation("*** Alle Splines berechnet! 👌");
 
       var nbrMessungen = anemometerMessungen.Count;
       var temperaturInterpolationspunkte = new List<Interpolationspunkt>();
@@ -175,6 +206,7 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
 
       for (int i = 0; i < nbrMessungen; i++)
       {
+        _logger.LogInformation("*** Berechne Interpolationspunkte für Messung {Index}...", i);
         AngereicherterMesspunkt temperaturMesspunkt = temperaturMesspunkte[i];
         AngereicherterMesspunkt luftfeuchtigkeitMesspunkt = luftfeuchtigkeitMesspunkte[i];
         AngereicherterMesspunkt windgeschwindigkeitMesspunkt = windgeschwindigkeitMesspunkte[i];
@@ -188,6 +220,7 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
 
           while (currentOffset < xCoordNext)
           {
+            _logger.LogInformation("*** Interpolationspunkt für Offset {Offset} wird berechnet...", currentOffset);
             temperaturInterpolationspunkte.Add(
               new Interpolationspunkt(temperaturMesspunkt, currentOffset)
             );
@@ -211,10 +244,12 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
             new Interpolationspunkt(windgeschwindigkeitMesspunkt, 0)
           );
         }
+        _logger.LogInformation("*** Berechnung Interpolationspunkte für Messung {Index} abgeschlossen!", i);
       }
 
       for (int i = 0; i < temperaturInterpolationspunkte.Count; i++)
       {
+        _logger.LogInformation("*** Berechne {KanalMessung} {Index}", nameof(KanalMessung), i);
         var currentTemperaturInterpolationspunkt = temperaturInterpolationspunkte[i];
         result.Add(
           new KanalMessung
@@ -228,6 +263,8 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         );
       }
     }
+
+    _logger.LogInformation("*** Berechnung von {Anzahl} Kanalmessungen abgeschlossen 💪💪💪!", result.Count);
 
     return result;
   }
