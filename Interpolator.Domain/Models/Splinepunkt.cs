@@ -1,10 +1,10 @@
 namespace Interpolator.Domain.Models;
 
-public class Interpolationspunkt
+public class Splinepunkt
 {
-  public Interpolationspunkt(AngereicherterMesspunkt messpunkt, double offset, DateTime t)
+  public Splinepunkt(SplineMesspunkt messpunkt, double x, DateTime t)
   {
-    X = messpunkt.X + offset;
+    X = x;
     Y =
       (messpunkt.A * Math.Pow(X, 3))
       + (messpunkt.B * Math.Pow(X, 2))

@@ -1,14 +1,16 @@
 namespace Interpolator.Domain.Models;
 
-public class AngereicherterMesspunkt
+public class SplineMesspunkt
 {
-  public AngereicherterMesspunkt(double x, double y, DateTime t)
+  public SplineMesspunkt(double x, double y, DateTime t)
   {
     X = x;
     Y = y;
     T = t;
   }
 
+  // Polinomiale Parameter
+  // y = Ax^3 + Bx^2 + Cx + D
   public double A { get; set; }
   public double B { get; set; }
   public double C { get; set; }
@@ -21,5 +23,7 @@ public class AngereicherterMesspunkt
   public double X { get; }
 
   public double Y { get; }
+
+  // y''(x) = dy^2/dx^2  2. Ableitung
   public double Y2 { get; set; }
 }

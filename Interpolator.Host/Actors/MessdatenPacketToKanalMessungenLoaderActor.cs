@@ -169,9 +169,9 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         .OrderBy(anemometerCsv => anemometerCsv.Zeit)
         .ToList();
 
-      var temperaturMesspunkte = new List<AngereicherterMesspunkt>();
-      var luftfeuchtigkeitMesspunkte = new List<AngereicherterMesspunkt>();
-      var windgeschwindigkeitMesspunkte = new List<AngereicherterMesspunkt>();
+      var temperaturMesspunkte = new List<Messpunkt>();
+      var luftfeuchtigkeitMesspunkte = new List<Messpunkt>();
+      var windgeschwindigkeitMesspunkte = new List<Messpunkt>();
 
       for (
         int anemomenterMessungIndex = 0;
@@ -204,17 +204,13 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
           anemometerMessung.WindgeschwindigkeitInMeterProSekunde
         );
 
-        var temperaturMesspunkt = new AngereicherterMesspunkt(
-          xCoord,
-          yCoordTemperaturInGradCelsius,
-          zeitstempel
-        );
-        var luftfeuchtigkeitMesspunkt = new AngereicherterMesspunkt(
+        var temperaturMesspunkt = new Messpunkt(xCoord, yCoordTemperaturInGradCelsius, zeitstempel);
+        var luftfeuchtigkeitMesspunkt = new Messpunkt(
           xCoord,
           yCoordLuftfeuchtigkeitInProzent,
           zeitstempel
         );
-        var windgeschwindigkeitMesspunkt = new AngereicherterMesspunkt(
+        var windgeschwindigkeitMesspunkt = new Messpunkt(
           xCoord,
           yCoordWindgeschwindigkeitInMeterProSekunde,
           zeitstempel
@@ -225,28 +221,35 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         windgeschwindigkeitMesspunkte.Add(windgeschwindigkeitMesspunkt);
       }
 
-      temperaturMesspunkte.CalculateSpline(globaleGewichtung);
-      luftfeuchtigkeitMesspunkte.CalculateSpline(globaleGewichtung);
-      windgeschwindigkeitMesspunkte.CalculateSpline(globaleGewichtung);
+      IEnumerable<SplineMesspunkt> angereicherteTemperaturMesspunkte =
+        temperaturMesspunkte.ToSplineMesspunkte(globaleGewichtung);
+      IEnumerable<SplineMesspunkt> angereicherteLuftfeuchtigkeitMesspunkte =
+        luftfeuchtigkeitMesspunkte.ToSplineMesspunkte(globaleGewichtung);
+      IEnumerable<SplineMesspunkt> angereicherteWindgeschwindigkeitMesspunkte =
+        windgeschwindigkeitMesspunkte.ToSplineMesspunkte(globaleGewichtung);
 
       _logger.LogInformation("*** Alle Splines berechnet! 👌");
 
       var nbrMessungen = anemometerMessungen.Count;
-      var temperaturInterpolationspunkte = new List<Interpolationspunkt>();
-      var luftfeuchtigkeitInterpolationspunkte = new List<Interpolationspunkt>();
-      var windgeschwindigkeitInterpolationspunkte = new List<Interpolationspunkt>();
+      var temperaturInterpolationspunkte = new List<Splinepunkt>();
+      var luftfeuchtigkeitInterpolationspunkte = new List<Splinepunkt>();
+      var windgeschwindigkeitInterpolationspunkte = new List<Splinepunkt>();
 
       for (int i = 0; i < nbrMessungen; i++)
       {
-        AngereicherterMesspunkt temperaturMesspunkt = temperaturMesspunkte[i];
-        AngereicherterMesspunkt luftfeuchtigkeitMesspunkt = luftfeuchtigkeitMesspunkte[i];
-        AngereicherterMesspunkt windgeschwindigkeitMesspunkt = windgeschwindigkeitMesspunkte[i];
+        SplineMesspunkt temperaturMesspunkt = angereicherteTemperaturMesspunkte.ElementAt(
+          i
+        );
+        SplineMesspunkt luftfeuchtigkeitMesspunkt =
+          angereicherteLuftfeuchtigkeitMesspunkte.ElementAt(i);
+        SplineMesspunkt windgeschwindigkeitMesspunkt =
+          angereicherteWindgeschwindigkeitMesspunkte.ElementAt(i);
 
         var nextIndex = i + 1;
 
         if (nextIndex < nbrMessungen)
         {
-          AngereicherterMesspunkt next = temperaturMesspunkte[nextIndex];
+          SplineMesspunkt next = angereicherteTemperaturMesspunkte.ElementAt(nextIndex);
           double xCoordNext = next.X;
           double xCoordCurrent = temperaturMesspunkt.X;
           DateTime tCurrent = temperaturMesspunkt.T;
@@ -257,13 +260,13 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
           while (xCoordCurrent < xCoordNext)
           {
             temperaturInterpolationspunkte.Add(
-              new Interpolationspunkt(temperaturMesspunkt, xCoordCurrent, tCurrent)
+              new Splinepunkt(temperaturMesspunkt, xCoordCurrent, tCurrent)
             );
             luftfeuchtigkeitInterpolationspunkte.Add(
-              new Interpolationspunkt(luftfeuchtigkeitMesspunkt, xCoordCurrent, tCurrent)
+              new Splinepunkt(luftfeuchtigkeitMesspunkt, xCoordCurrent, tCurrent)
             );
             windgeschwindigkeitInterpolationspunkte.Add(
-              new Interpolationspunkt(windgeschwindigkeitMesspunkt, xCoordCurrent, tCurrent)
+              new Splinepunkt(windgeschwindigkeitMesspunkt, xCoordCurrent, tCurrent)
             );
 
             xCoordCurrent += interpolationsOffset;
@@ -273,13 +276,13 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         else
         {
           temperaturInterpolationspunkte.Add(
-            new Interpolationspunkt(temperaturMesspunkt, 0, temperaturMesspunkt.T)
+            new Splinepunkt(temperaturMesspunkt, 0, temperaturMesspunkt.T)
           );
           luftfeuchtigkeitInterpolationspunkte.Add(
-            new Interpolationspunkt(luftfeuchtigkeitMesspunkt, 0, temperaturMesspunkt.T)
+            new Splinepunkt(luftfeuchtigkeitMesspunkt, 0, temperaturMesspunkt.T)
           );
           windgeschwindigkeitInterpolationspunkte.Add(
-            new Interpolationspunkt(windgeschwindigkeitMesspunkt, 0, temperaturMesspunkt.T)
+            new Splinepunkt(windgeschwindigkeitMesspunkt, 0, temperaturMesspunkt.T)
           );
         }
       }
