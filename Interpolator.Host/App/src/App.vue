@@ -14,13 +14,15 @@ import { Line } from "vue-chartjs";
 
 ChartJs.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+const datapoints = [40, 39, 10, 40, 39, 80, 40];
+
 const data = computed(() => ({
-  labels: ["January", "February", "March", "April", "May", "June", "July"],
+  labels: datapoints.map((_, index) => index),
   datasets: [
     {
       label: "Data One",
       backgroundColor: "#f87979",
-      data: [40, 39, 10, 40, 39, 80, 40],
+      data: datapoints,
     },
   ],
 }));

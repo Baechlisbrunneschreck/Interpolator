@@ -4,16 +4,16 @@ helm_repo('stackgres-charts', 'https://stackgres.io/downloads/stackgres-k8s/stac
 k8s_yaml('./k8s/local-namespace.yaml')
 
 helm_resource(
-    name='stackgres-operator',
-    chart='stackgres-charts/stackgres-operator',
-    resource_deps=[
-        'stackgres-charts'
-    ],
-    namespace='stackgres',
-    flags=[
-        '--wait',
-        '--version=1.16.3'
-    ],
+  name='stackgres-operator',
+  chart='stackgres-charts/stackgres-operator',
+  resource_deps=[
+    'stackgres-charts'
+  ],
+  namespace='stackgres',
+  flags=[
+    '--wait',
+    '--version=1.16.3'
+  ],
 )
 
-k8s_yaml('./k8s/local-postgres.yaml', )
+k8s_yaml('./k8s/local-postgres.yaml')
