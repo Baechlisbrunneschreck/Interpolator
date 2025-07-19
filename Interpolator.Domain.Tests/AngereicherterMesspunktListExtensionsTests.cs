@@ -1,6 +1,5 @@
 using Interpolator.Domain.Extensions;
 using Interpolator.Domain.Models;
-
 using SkiaSharp;
 
 namespace Interpolator.Domain.Tests;
@@ -13,19 +12,19 @@ public class AngereicherterMesspunktListExtensionsTests
     // Arrange
     List<Messpunkt> messListe = new List<Messpunkt>
     {
-      new Messpunkt(0, 2, DateTime.UtcNow),
-      new Messpunkt(1, 3, DateTime.UtcNow),
-      new Messpunkt(2, 5, DateTime.UtcNow),
-      new Messpunkt(3, 7, DateTime.UtcNow),
-      new Messpunkt(4, 11, DateTime.UtcNow),
-      new Messpunkt(5, 13, DateTime.UtcNow),
-      new Messpunkt(6, 17, DateTime.UtcNow),
-      new Messpunkt(7, 19, DateTime.UtcNow),
-      new Messpunkt(8, 23, DateTime.UtcNow),
-      new Messpunkt(9, 29, DateTime.UtcNow),
+      new Messpunkt(0, 20, DateTime.UtcNow),
+      new Messpunkt(10, 30, DateTime.UtcNow),
+      new Messpunkt(20, 170, DateTime.UtcNow),
+      new Messpunkt(30, 50, DateTime.UtcNow),
+      new Messpunkt(40, 70, DateTime.UtcNow),
+      new Messpunkt(50, 230, DateTime.UtcNow),
+      new Messpunkt(60, 110, DateTime.UtcNow),
+      new Messpunkt(70, 130, DateTime.UtcNow),
+      new Messpunkt(80, 290, DateTime.UtcNow),
+      new Messpunkt(90, 190, DateTime.UtcNow),
     };
     double gewichtung = 1.0;
-    double abstand = 0.5;
+    double abstand = 0.1;
 
     // Act
     IEnumerable<SplineMesspunkt> splineMesspunkte = messListe.ToSplineMesspunkte(gewichtung);
@@ -84,11 +83,13 @@ public class AngereicherterMesspunktListExtensionsTests
   private static void RenderPointsWithSkiaSharp(
     List<Messpunkt> originalPoints,
     IEnumerable<Splinepunkt> interpolatedPoints,
-    DirectoryInfo? outputDirectory = null
+    DirectoryInfo? outputDirectory = null,
+    bool drawOriginalPoints = true,
+    bool drawMeasurementPointsOnSpline = true
   )
   {
-    const int width = 800;
-    const int height = 600;
+    const int width = 1920;
+    const int height = 1080;
 
     // Create bitmap
     using SKBitmap bitmap = new SKBitmap(width, height);
@@ -167,20 +168,24 @@ public class AngereicherterMesspunktListExtensionsTests
       canvas.DrawPath(path, interpolatedLinePaint);
     }
 
-    // Draw circles for interpolated points
-    foreach (Splinepunkt? point in interpolatedArray)
+    if (drawMeasurementPointsOnSpline)
     {
-      float x = ToScreenX(point.X);
-      float y = ToScreenY(point.Y);
-      canvas.DrawCircle(x, y, 4, interpolatedLinePaint);
+      foreach (Splinepunkt? point in interpolatedArray)
+      {
+        float x = ToScreenX(point.X);
+        float y = ToScreenY(point.Y);
+        canvas.DrawCircle(x, y, 4, interpolatedLinePaint);
+      }
     }
 
-    // Draw original points
-    foreach (Messpunkt point in originalPoints)
+    if (drawOriginalPoints)
     {
-      float x = ToScreenX(point.X);
-      float y = ToScreenY(point.Y);
-      canvas.DrawCircle(x, y, 6, originalPointPaint);
+      foreach (Messpunkt point in originalPoints)
+      {
+        float x = ToScreenX(point.X);
+        float y = ToScreenY(point.Y);
+        canvas.DrawCircle(x, y, 6, originalPointPaint);
+      }
     }
 
     // Save image to test output

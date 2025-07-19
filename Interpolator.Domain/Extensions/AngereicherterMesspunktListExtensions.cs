@@ -58,7 +58,15 @@ public static class MessungListExtensions
     double gewichtung
   )
   {
-    var messliste = messpunkte.ToAngereicherteMesspunkte().ToList();
+    List<SplineMesspunkt> messliste = messpunkte.ToAngereicherteMesspunkte().ToList();
+    SplineMesspunkt firstMesspunkt = messliste.First();
+
+    messliste = messliste
+      .Prepend(new SplineMesspunkt(-1, firstMesspunkt.Y, DateTime.MinValue, 0.000001))
+      .Prepend(new SplineMesspunkt(-2, firstMesspunkt.Y, DateTime.MinValue, 0.000001))
+      .Prepend(new SplineMesspunkt(-3, firstMesspunkt.Y, DateTime.MinValue, 0.000001))
+      .Prepend(new SplineMesspunkt(-4, firstMesspunkt.Y, DateTime.MinValue, 0.000001))
+      .ToList();
 
     int N = (messliste.Count - 1); // Anzahl Messpunkte [1] Startwert = 0
     int N1 = N - 1; // Index-Grenze [1]
@@ -191,6 +199,9 @@ public static class MessungListExtensions
     }
     messliste[N].C =
       (messliste[N].D - messliste[N1].D) * H + (2 * messliste[N].Y2 + messliste[N1].Y2) / (6 * H);
+
+    // Entferne die ersten 4 Punkte, die nur für die Berechnung benötigt wurden
+    messliste.RemoveRange(0, 4);
 
     return messliste;
   }

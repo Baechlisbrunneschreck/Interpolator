@@ -2,11 +2,12 @@ namespace Interpolator.Domain.Models;
 
 public class SplineMesspunkt
 {
-  public SplineMesspunkt(double x, double y, DateTime t)
+  public SplineMesspunkt(double x, double y, DateTime t, double? p = null)
   {
     X = x;
     Y = y;
     T = t;
+    P = p;
   }
 
   // Polinomiale Parameter
