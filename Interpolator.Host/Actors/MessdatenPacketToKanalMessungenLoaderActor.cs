@@ -3,20 +3,15 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-
 using Akka.Actor;
-
 using CsvHelper;
-
 using Interpolator.Domain.Extensions;
 using Interpolator.Domain.Models;
 using Interpolator.Host.Actors.Bases;
 using Interpolator.Host.Models;
 using Interpolator.Host.Models.Aggregates;
 using Interpolator.Host.Models.Csv;
-
 using Marten;
-
 using Microsoft.Extensions.Logging;
 
 namespace Interpolator.Host.Actors;
@@ -82,14 +77,14 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
       "*** Kommando {Command} erhalten",
       nameof(LoadAdllKanalMessungenCommand)
     );
-    using var lightweightSession = _documentStore.LightweightSession();
+    using IDocumentSession lightweightSession = _documentStore.LightweightSession();
 
     _logger.LogInformation("*** Lösche alle existierende {Messung}...", nameof(KanalMessung));
     lightweightSession.DeleteWhere<KanalMessung>(x => true);
     lightweightSession.SaveChangesAsync().GetAwaiter().GetResult();
 
     _logger.LogInformation("*** Suche alle {MessdatenPaket}...", nameof(MessdatenPaket));
-    var kanalMessungen = lightweightSession
+    KanalMessung[] kanalMessungen = lightweightSession
       .Query<MessdatenPaket>()
       .Where(messdatenPaket =>
         messdatenPaket.MessdatenMimeType == "text/csv"
@@ -127,10 +122,12 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         "*** {MessdatenPaket} mit Messdaten gefunden...",
         nameof(MessdatenPaket)
       );
-      using var streamReader = new StreamReader(new MemoryStream(messdatenPaket.Messdaten));
-      using var csvReader = new CsvReader(streamReader, _csvReaderConfiguration);
+      using StreamReader streamReader = new StreamReader(
+        new MemoryStream(messdatenPaket.Messdaten)
+      );
+      using CsvReader csvReader = new CsvReader(streamReader, _csvReaderConfiguration);
 
-      var anemometerMessungen = csvReader
+      List<AnemometerCsv> anemometerMessungen = csvReader
         .GetRecords<AnemometerCsv>()
         .GroupBy(anemometerMessung => anemometerMessung.Zeit)
         .Select(grouping =>
@@ -169,9 +166,9 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         .OrderBy(anemometerCsv => anemometerCsv.Zeit)
         .ToList();
 
-      var temperaturMesspunkte = new List<Messpunkt>();
-      var luftfeuchtigkeitMesspunkte = new List<Messpunkt>();
-      var windgeschwindigkeitMesspunkte = new List<Messpunkt>();
+      List<Messpunkt> temperaturMesspunkte = new List<Messpunkt>();
+      List<Messpunkt> luftfeuchtigkeitMesspunkte = new List<Messpunkt>();
+      List<Messpunkt> windgeschwindigkeitMesspunkte = new List<Messpunkt>();
 
       for (
         int anemomenterMessungIndex = 0;
@@ -204,13 +201,17 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
           anemometerMessung.WindgeschwindigkeitInMeterProSekunde
         );
 
-        var temperaturMesspunkt = new Messpunkt(xCoord, yCoordTemperaturInGradCelsius, zeitstempel);
-        var luftfeuchtigkeitMesspunkt = new Messpunkt(
+        Messpunkt temperaturMesspunkt = new Messpunkt(
+          xCoord,
+          yCoordTemperaturInGradCelsius,
+          zeitstempel
+        );
+        Messpunkt luftfeuchtigkeitMesspunkt = new Messpunkt(
           xCoord,
           yCoordLuftfeuchtigkeitInProzent,
           zeitstempel
         );
-        var windgeschwindigkeitMesspunkt = new Messpunkt(
+        Messpunkt windgeschwindigkeitMesspunkt = new Messpunkt(
           xCoord,
           yCoordWindgeschwindigkeitInMeterProSekunde,
           zeitstempel
@@ -221,75 +222,24 @@ public class MessdatenPackeToKanalMessungenLoaderActor : CsvLoaderActorBase, IWi
         windgeschwindigkeitMesspunkte.Add(windgeschwindigkeitMesspunkt);
       }
 
-      IEnumerable<SplineMesspunkt> angereicherteTemperaturMesspunkte =
-        temperaturMesspunkte.ToSplineMesspunkte(globaleGewichtung);
-      IEnumerable<SplineMesspunkt> angereicherteLuftfeuchtigkeitMesspunkte =
-        luftfeuchtigkeitMesspunkte.ToSplineMesspunkte(globaleGewichtung);
-      IEnumerable<SplineMesspunkt> angereicherteWindgeschwindigkeitMesspunkte =
-        windgeschwindigkeitMesspunkte.ToSplineMesspunkte(globaleGewichtung);
+      List<Splinepunkt> temperaturInterpolationspunkte = temperaturMesspunkte
+        .ToSplineMesspunkte(globaleGewichtung)
+        .ToSplinepunkte(interpolationsOffset)
+        .ToList();
+      List<Splinepunkt> luftfeuchtigkeitInterpolationspunkte = luftfeuchtigkeitMesspunkte
+        .ToSplineMesspunkte(globaleGewichtung)
+        .ToSplinepunkte(interpolationsOffset)
+        .ToList();
+      List<Splinepunkt> windgeschwindigkeitInterpolationspunkte = windgeschwindigkeitMesspunkte
+        .ToSplineMesspunkte(globaleGewichtung)
+        .ToSplinepunkte(interpolationsOffset)
+        .ToList();
 
       _logger.LogInformation("*** Alle Splines berechnet! 👌");
 
-      var nbrMessungen = anemometerMessungen.Count;
-      var temperaturInterpolationspunkte = new List<Splinepunkt>();
-      var luftfeuchtigkeitInterpolationspunkte = new List<Splinepunkt>();
-      var windgeschwindigkeitInterpolationspunkte = new List<Splinepunkt>();
-
-      for (int i = 0; i < nbrMessungen; i++)
-      {
-        SplineMesspunkt temperaturMesspunkt = angereicherteTemperaturMesspunkte.ElementAt(
-          i
-        );
-        SplineMesspunkt luftfeuchtigkeitMesspunkt =
-          angereicherteLuftfeuchtigkeitMesspunkte.ElementAt(i);
-        SplineMesspunkt windgeschwindigkeitMesspunkt =
-          angereicherteWindgeschwindigkeitMesspunkte.ElementAt(i);
-
-        var nextIndex = i + 1;
-
-        if (nextIndex < nbrMessungen)
-        {
-          SplineMesspunkt next = angereicherteTemperaturMesspunkte.ElementAt(nextIndex);
-          double xCoordNext = next.X;
-          double xCoordCurrent = temperaturMesspunkt.X;
-          DateTime tCurrent = temperaturMesspunkt.T;
-          DateTime tNext = next.T;
-          TimeSpan tDelta = tNext - tCurrent;
-          TimeSpan tOffset = tDelta * interpolationsOffset;
-
-          while (xCoordCurrent < xCoordNext)
-          {
-            temperaturInterpolationspunkte.Add(
-              new Splinepunkt(temperaturMesspunkt, xCoordCurrent, tCurrent)
-            );
-            luftfeuchtigkeitInterpolationspunkte.Add(
-              new Splinepunkt(luftfeuchtigkeitMesspunkt, xCoordCurrent, tCurrent)
-            );
-            windgeschwindigkeitInterpolationspunkte.Add(
-              new Splinepunkt(windgeschwindigkeitMesspunkt, xCoordCurrent, tCurrent)
-            );
-
-            xCoordCurrent += interpolationsOffset;
-            tCurrent += tOffset;
-          }
-        }
-        else
-        {
-          temperaturInterpolationspunkte.Add(
-            new Splinepunkt(temperaturMesspunkt, 0, temperaturMesspunkt.T)
-          );
-          luftfeuchtigkeitInterpolationspunkte.Add(
-            new Splinepunkt(luftfeuchtigkeitMesspunkt, 0, temperaturMesspunkt.T)
-          );
-          windgeschwindigkeitInterpolationspunkte.Add(
-            new Splinepunkt(windgeschwindigkeitMesspunkt, 0, temperaturMesspunkt.T)
-          );
-        }
-      }
-
       for (int i = 0; i < temperaturInterpolationspunkte.Count; i++)
       {
-        var currentTemperaturInterpolationspunkt = temperaturInterpolationspunkte[i];
+        Splinepunkt currentTemperaturInterpolationspunkt = temperaturInterpolationspunkte[i];
         result.Add(
           new KanalMessung
           {
