@@ -1,4 +1,4 @@
-﻿using Interpolator.Domain.Extensions;
+using Interpolator.Domain.Extensions;
 using Interpolator.Domain.Models;
 
 using SkiaSharp;
@@ -13,25 +13,27 @@ public class AngereicherterMesspunktListExtensionsTests
     // Arrange
     List<Messpunkt> messListe = new List<Messpunkt>
     {
-      new Messpunkt(1, 2, DateTime.UtcNow),
-      new Messpunkt(2, 3, DateTime.UtcNow),
-      new Messpunkt(3, 5, DateTime.UtcNow),
-      new Messpunkt(4, 7, DateTime.UtcNow),
-      new Messpunkt(5, 11, DateTime.UtcNow),
-      new Messpunkt(6, 13, DateTime.UtcNow),
-      new Messpunkt(7, 17, DateTime.UtcNow),
-      new Messpunkt(8, 19, DateTime.UtcNow),
-      new Messpunkt(9, 23, DateTime.UtcNow),
-      new Messpunkt(10, 29, DateTime.UtcNow),
+      new Messpunkt(0, 2, DateTime.UtcNow),
+      new Messpunkt(1, 3, DateTime.UtcNow),
+      new Messpunkt(2, 5, DateTime.UtcNow),
+      new Messpunkt(3, 7, DateTime.UtcNow),
+      new Messpunkt(4, 11, DateTime.UtcNow),
+      new Messpunkt(5, 13, DateTime.UtcNow),
+      new Messpunkt(6, 17, DateTime.UtcNow),
+      new Messpunkt(7, 19, DateTime.UtcNow),
+      new Messpunkt(8, 23, DateTime.UtcNow),
+      new Messpunkt(9, 29, DateTime.UtcNow),
     };
     double gewichtung = 1.0;
+    double abstand = 0.5;
 
     // Act
     IEnumerable<SplineMesspunkt> splineMesspunkte = messListe.ToSplineMesspunkte(gewichtung);
-    IEnumerable<Splinepunkt> splinepunkte = splineMesspunkte.ToSplinepunkte(0.1);
+    IEnumerable<Splinepunkt> splinepunkte = splineMesspunkte.ToSplinepunkte(abstand);
 
     // Assert
     PrintToCsv(splineMesspunkte);
+    PrintToCsv(splinepunkte);
     RenderPointsWithSkiaSharp(
       messListe,
       splinepunkte,
@@ -39,6 +41,18 @@ public class AngereicherterMesspunktListExtensionsTests
     );
     Assert.True(splineMesspunkte.Any());
     Assert.True(splinepunkte.Any());
+  }
+
+  private static void PrintToCsv(IEnumerable<Splinepunkt> splinepunkte)
+  {
+    string csvSeparator = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+    string csvPath = Path.Combine(Directory.GetCurrentDirectory(), "splinepunkte.csv");
+    using StreamWriter writer = new StreamWriter(csvPath);
+    writer.WriteLine($"X{csvSeparator}Y{csvSeparator}T");
+    foreach (Splinepunkt splinepunkt in splinepunkte)
+    {
+      writer.WriteLine(splinepunkt.X + csvSeparator + splinepunkt.Y + csvSeparator + splinepunkt.T);
+    }
   }
 
   private static void PrintToCsv(IEnumerable<SplineMesspunkt> splineMesspunkte)
