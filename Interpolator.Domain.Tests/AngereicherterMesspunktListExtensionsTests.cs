@@ -11,12 +11,18 @@ public class AngereicherterMesspunktListExtensionsTests
   public void Test1()
   {
     // Arrange
-    var messListe = new List<Messpunkt>
+    List<Messpunkt> messListe = new List<Messpunkt>
     {
       new Messpunkt(1, 2, DateTime.UtcNow),
       new Messpunkt(2, 3, DateTime.UtcNow),
       new Messpunkt(3, 5, DateTime.UtcNow),
-      new Messpunkt(4, 7, DateTime.UtcNow)
+      new Messpunkt(4, 7, DateTime.UtcNow),
+      new Messpunkt(5, 11, DateTime.UtcNow),
+      new Messpunkt(6, 13, DateTime.UtcNow),
+      new Messpunkt(7, 17, DateTime.UtcNow),
+      new Messpunkt(8, 19, DateTime.UtcNow),
+      new Messpunkt(9, 23, DateTime.UtcNow),
+      new Messpunkt(10, 29, DateTime.UtcNow),
     };
     double gewichtung = 1.0;
 
@@ -24,60 +30,95 @@ public class AngereicherterMesspunktListExtensionsTests
     IEnumerable<SplineMesspunkt> splineMesspunkte = messListe.ToSplineMesspunkte(gewichtung);
     IEnumerable<Splinepunkt> splinepunkte = splineMesspunkte.ToSplinepunkte(0.1);
 
-    // Quick SkiaSharp Rendering
-    RenderPointsWithSkiaSharp(messListe, splinepunkte);
-
     // Assert
+    PrintToCsv(splineMesspunkte);
+    RenderPointsWithSkiaSharp(
+      messListe,
+      splinepunkte,
+      new DirectoryInfo(Directory.GetCurrentDirectory())
+    );
     Assert.True(splineMesspunkte.Any());
     Assert.True(splinepunkte.Any());
   }
 
-  private void RenderPointsWithSkiaSharp(List<Messpunkt> originalPoints, IEnumerable<Splinepunkt> interpolatedPoints)
+  private static void PrintToCsv(IEnumerable<SplineMesspunkt> splineMesspunkte)
+  {
+    string csvSeparator = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+    string csvPath = Path.Combine(Directory.GetCurrentDirectory(), "spline_messpunkte.csv");
+    using StreamWriter writer = new StreamWriter(csvPath);
+    writer.WriteLine(
+      $"X{csvSeparator}Y{csvSeparator}A{csvSeparator}B{csvSeparator}C{csvSeparator}D"
+    );
+    foreach (SplineMesspunkt splineMesspunkt in splineMesspunkte)
+    {
+      writer.WriteLine(
+        splineMesspunkt.X
+          + csvSeparator
+          + splineMesspunkt.Y
+          + csvSeparator
+          + splineMesspunkt.A
+          + csvSeparator
+          + splineMesspunkt.B
+          + csvSeparator
+          + splineMesspunkt.C
+          + csvSeparator
+          + splineMesspunkt.D
+      );
+    }
+  }
+
+  private static void RenderPointsWithSkiaSharp(
+    List<Messpunkt> originalPoints,
+    IEnumerable<Splinepunkt> interpolatedPoints,
+    DirectoryInfo? outputDirectory = null
+  )
   {
     const int width = 800;
     const int height = 600;
 
     // Create bitmap
-    using var bitmap = new SKBitmap(width, height);
-    using var canvas = new SKCanvas(bitmap);
+    using SKBitmap bitmap = new SKBitmap(width, height);
+    using SKCanvas canvas = new SKCanvas(bitmap);
 
     // Clear background
     canvas.Clear(SKColors.White);
 
     // Create paints
-    using var originalPointPaint = new SKPaint
+    using SKPaint originalPointPaint = new SKPaint
     {
       Color = SKColors.Red,
       IsAntialias = true,
-      Style = SKPaintStyle.Fill
+      Style = SKPaintStyle.Fill,
     };
 
-    using var interpolatedLinePaint = new SKPaint
+    using SKPaint interpolatedLinePaint = new SKPaint
     {
       Color = SKColors.Blue,
       IsAntialias = true,
       Style = SKPaintStyle.Stroke,
-      StrokeWidth = 2
+      StrokeWidth = 2,
     };
 
-    using var gridPaint = new SKPaint
+    using SKPaint gridPaint = new SKPaint
     {
       Color = SKColors.LightGray,
       IsAntialias = true,
       Style = SKPaintStyle.Stroke,
-      StrokeWidth = 1
+      StrokeWidth = 1,
     };
 
     // Find data bounds
-    var allPoints = originalPoints.Concat(interpolatedPoints.Select(p => new Messpunkt(p.X, p.Y, p.T))).ToList();
-    var minX = allPoints.Min(p => p.X);
-    var maxX = allPoints.Max(p => p.X);
-    var minY = allPoints.Min(p => p.Y);
-    var maxY = allPoints.Max(p => p.Y);
+    List<Messpunkt> allPoints = originalPoints
+      .Concat(interpolatedPoints.Select(p => new Messpunkt(p.X, p.Y, p.T)))
+      .ToList();
+    double minX = allPoints.Min(p => p.X);
+    double maxX = allPoints.Max(p => p.X);
+    double minY = allPoints.Min(p => p.Y);
+    double maxY = allPoints.Max(p => p.Y);
 
     // Add some padding
-    var rangeX = maxX - minX;
-    var rangeY = maxY - minY;
+    double rangeX = maxX - minX;
+    double rangeY = maxY - minY;
     minX -= rangeX * 0.1;
     maxX += rangeX * 0.1;
     minY -= rangeY * 0.1;
@@ -97,14 +138,14 @@ public class AngereicherterMesspunktListExtensionsTests
     }
 
     // Draw interpolated line
-    var interpolatedArray = interpolatedPoints.ToArray();
+    Splinepunkt[] interpolatedArray = interpolatedPoints.ToArray();
     if (interpolatedArray.Length > 1)
     {
-      using var path = new SKPath();
-      var firstPoint = interpolatedArray[0];
+      using SKPath path = new SKPath();
+      Splinepunkt firstPoint = interpolatedArray[0];
       path.MoveTo(ToScreenX(firstPoint.X), ToScreenY(firstPoint.Y));
 
-      foreach (var point in interpolatedArray.Skip(1))
+      foreach (Splinepunkt? point in interpolatedArray.Skip(1))
       {
         path.LineTo(ToScreenX(point.X), ToScreenY(point.Y));
       }
@@ -113,7 +154,7 @@ public class AngereicherterMesspunktListExtensionsTests
     }
 
     // Draw circles for interpolated points
-    foreach (var point in interpolatedArray)
+    foreach (Splinepunkt? point in interpolatedArray)
     {
       float x = ToScreenX(point.X);
       float y = ToScreenY(point.Y);
@@ -121,7 +162,7 @@ public class AngereicherterMesspunktListExtensionsTests
     }
 
     // Draw original points
-    foreach (var point in originalPoints)
+    foreach (Messpunkt point in originalPoints)
     {
       float x = ToScreenX(point.X);
       float y = ToScreenY(point.Y);
@@ -129,10 +170,13 @@ public class AngereicherterMesspunktListExtensionsTests
     }
 
     // Save image to test output
-    var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "interpolation_plot.png");
-    using var image = SKImage.FromBitmap(bitmap);
-    using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-    using var stream = File.OpenWrite(outputPath);
+    string outputPath = Path.Combine(
+      outputDirectory?.FullName ?? Directory.GetCurrentDirectory(),
+      "interpolation_plot.png"
+    );
+    using SKImage image = SKImage.FromBitmap(bitmap);
+    using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
+    using FileStream stream = File.OpenWrite(outputPath);
     data.SaveTo(stream);
 
     Console.WriteLine($"Plot saved to: {outputPath}");

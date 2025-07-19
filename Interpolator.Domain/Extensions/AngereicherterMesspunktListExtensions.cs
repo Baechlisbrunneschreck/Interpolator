@@ -40,10 +40,7 @@ public static class MessungListExtensions
     }
   }
 
-  public static IEnumerable<SplineMesspunkt> ToSplineMesspunkte(
-    this List<Messpunkt> messpunkte,
-    double gewichtung
-  )
+  /// <summary>
   // Glättende kubische Spline-Funktion {Helmut Späth: Algorithmen für elementare Ausgleichs-Modelle,
   // Oldenbourg Verlag München Wien 1973, ISBN 3-486-39561-0} Seite 62 Bild U11
   //
@@ -52,12 +49,19 @@ public static class MessungListExtensions
   // k  = Index [1]
   //
   // Änderungen
-  //03032014_01      H4 -> N3 und H3 -> N4 wurden gewechsel und gemäss Original korrigiert
+  // 03032014_01      H4 -> N3 und H3 -> N4 wurden gewechsel und gemäss Original korrigiert
   // Pos 135           if (N4 != 0)
   // Pos 140             if (N3 != 0)
-
+  /// </summary>
+  /// <param name="messpunkte"></param>
+  /// <param name="gewichtung"></param>
+  /// <returns></returns>
+  public static IEnumerable<SplineMesspunkt> ToSplineMesspunkte(
+    this List<Messpunkt> messpunkte,
+    double gewichtung
+  )
   {
-    var messliste = MesspunktExtensions.ToAngereicherteMesspunkte(messpunkte, gewichtung).ToList();
+    var messliste = MesspunktExtensions.ToAngereicherteMesspunkte(messpunkte).ToList();
 
     int N = (messliste.Count - 1); // Anzahl Messpunkte [1] Startwert = 0
     int N1 = N - 1; // Index-Grenze [1]
