@@ -54,7 +54,7 @@ public static class MessungListExtensions
   /// Pos 140          wenn (N3 != 0)
   /// </summary>
   public static IEnumerable<SplineMesspunkt> ToSplineMesspunkte(
-    this List<Messpunkt> messpunkte,
+    this IEnumerable<Messpunkt> messpunkte,
     double gewichtung
   )
   {

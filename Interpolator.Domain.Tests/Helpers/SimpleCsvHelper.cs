@@ -2,7 +2,7 @@ using Interpolator.Domain.Models;
 
 namespace Interpolator.Domain.Tests.Helpers;
 
-internal static class CsvHelper
+internal static class SimpleCsvHelper
 {
   internal static void PrintToCsv(IEnumerable<Splinepunkt> splinepunkte)
   {

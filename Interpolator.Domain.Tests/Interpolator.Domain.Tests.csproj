@@ -7,6 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="SkiaSharp" Version="3.119.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
@@ -14,8 +15,14 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Interpolator.Domain\Interpolator.Domain.csproj" />
+    <ProjectReference Include="..\Interpolator.Host\Interpolator.Host.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="EFH_Vergleich_03_10_03.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

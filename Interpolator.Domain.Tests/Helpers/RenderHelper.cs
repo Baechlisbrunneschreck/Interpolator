@@ -6,7 +6,7 @@ namespace Interpolator.Domain.Tests.Helpers;
 internal static class RenderHelper
 {
   internal static void RenderPointsWithSkiaSharp(
-    List<Messpunkt> originalPoints,
+    IEnumerable<Messpunkt> originalPoints,
     IEnumerable<Splinepunkt> interpolatedPoints,
     DirectoryInfo? outputDirectory = null,
     bool drawOriginalPoints = true,
