@@ -30,3 +30,17 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: interpolator-host
+  namespace: interpolator
+spec:
+  selector:
+    app: interpolator-host
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
