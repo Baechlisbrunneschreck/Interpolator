@@ -1,0 +1,17 @@
+apiVersion: stackgres.io/v1
+kind: SGCluster
+metadata:
+  name: interpolator-db
+  namespace: interpolator
+spec:
+  instances: 1
+  postgres:
+    version: "latest"
+  pods:
+    persistentVolume:
+      size: "5Gi"
+  postgresServices:
+    primary:
+      type: NodePort
+    replicas:
+      type: NodePort

@@ -1,7 +1,7 @@
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
 helm_repo('stackgres-charts', 'https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/')
 
-k8s_yaml('./k8s/local-namespace.yaml')
+k8s_yaml('./k8s/tilt/tilt-namespace.yaml')
 
 helm_resource(
   name='stackgres-operator',
@@ -16,4 +16,4 @@ helm_resource(
   ],
 )
 
-k8s_yaml('./k8s/local-postgres.yaml')
+k8s_yaml('./k8s/tilt/tilt-postgres.yaml')
