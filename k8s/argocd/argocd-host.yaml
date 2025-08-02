@@ -17,7 +17,7 @@ spec:
         - name: interpolator-host
           image: hanneszbinden/baechlisbrunneschreck-interpolator:0.0.1
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           env:
             - name: ASPNETCORE_ENVIRONMENT
               value: "Production"
@@ -42,7 +42,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 80
+      targetPort: 8080
   type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
