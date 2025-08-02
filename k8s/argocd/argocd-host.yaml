@@ -44,3 +44,21 @@ spec:
       port: 80
       targetPort: 80
   type: NodePort
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: interpolator-host
+  namespace: interpolator
+spec:
+  rules:
+    - host: interpolator.zbinde.ch
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: interpolator-host
+                port:
+                  number: 80
