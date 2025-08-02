@@ -2,9 +2,12 @@
   <PropertyGroup>
     <GitVersionEnabled Condition="Exists('../.git')">true</GitVersionEnabled>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Condition="'$(GitVersionEnabled)' == 'true'" Include="GitVersion.MsBuild" Version="6.1.0">
+    <PackageReference
+      Condition="'$(GitVersionEnabled)' == 'true'"
+      Include="GitVersion.MsBuild"
+      Version="6.3.0"
+    >
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
